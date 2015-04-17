@@ -4,16 +4,16 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 FIND_PACKAGE(Boost COMPONENTS unit_test_framework system REQUIRED)
 
 SET(CMAKE_CXX_FLAGS "-Wextra -Wall -pthread" )
-SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3" )
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3" )
+SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" )
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -g" )
 
 SET(HEADERS
-    src/httpparser/httpparser.h
     src/httpparser/httprequestparser.h
     src/httpparser/httpresponseparser.h
     src/httpparser/request.h
     src/httpparser/response.h
     src/httpparser/urlparser.h
+    tests/common.h
 )
 
 SET(SOURCES
@@ -45,3 +45,4 @@ ADD_TEST(urlparser urlparser)
 
 ENABLE_TESTING()
 
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/src/httpparser DESTINATION include)

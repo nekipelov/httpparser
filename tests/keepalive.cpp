@@ -10,6 +10,9 @@
 
 BOOST_AUTO_TEST_SUITE(Keepalive)
 
+using httpparser::HttpRequestParser;
+using httpparser::Request;
+
 struct KeepaliveFixture
 {
     Request parse(const std::string &text)
@@ -19,7 +22,7 @@ struct KeepaliveFixture
         
         HttpRequestParser::ParseResult res = parser.parse(request, text.c_str(), text.c_str() + text.size());
         
-        if( res != HttpRequestParser::CompletedResult )
+        if( res != HttpRequestParser::ParsingCompleted )
             return Request();
         else
             return request;
@@ -41,7 +44,7 @@ BOOST_FIXTURE_TEST_CASE(http_10_connection_default, KeepaliveFixture)
     
     result.headers.clear();
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(http_11_connection_default, KeepaliveFixture)
@@ -59,7 +62,7 @@ BOOST_FIXTURE_TEST_CASE(http_11_connection_default, KeepaliveFixture)
     
     result.headers.clear();
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 
@@ -79,7 +82,7 @@ BOOST_FIXTURE_TEST_CASE(http_10_connection_keepalive, KeepaliveFixture)
     
     result.headers.clear();
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(http_11_connection_close, KeepaliveFixture)
@@ -98,7 +101,7 @@ BOOST_FIXTURE_TEST_CASE(http_11_connection_close, KeepaliveFixture)
             
     result.headers.clear();
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

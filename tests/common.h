@@ -4,12 +4,12 @@
 #include <httpparser/request.h>
 #include <httpparser/response.h>
 
-std::ostream & operator<< (std::ostream &stream, const Request &req)
+std::ostream & operator<< (std::ostream &stream, const httpparser::Request &req)
 {
     stream << req.method << " " << req.uri << " HTTP/" 
            << req.versionMajor << "." << req.versionMinor << "\n";
            
-    for(std::vector<Request::HeaderItem>::const_iterator it = req.headers.begin();
+    for(std::vector<httpparser::Request::HeaderItem>::const_iterator it = req.headers.begin();
         it != req.headers.end(); ++it)
     {
         stream << it->name << ": " << it->value << "\n";
@@ -21,19 +21,18 @@ std::ostream & operator<< (std::ostream &stream, const Request &req)
     return stream;
 }
 
-std::ostream & operator<< (std::ostream &stream, const Response &resp)
+std::ostream & operator<< (std::ostream &stream, const httpparser::Response &resp)
 {
     stream << "HTTP/" << resp.versionMajor << "." << resp.versionMinor
            << " " << resp.statusCode << " " << resp.status << "\n";
 
-    for(std::vector<Response::HeaderItem>::const_iterator it = resp.headers.begin();
+    for(std::vector<httpparser::Response::HeaderItem>::const_iterator it = resp.headers.begin();
         it != resp.headers.end(); ++it)
     {
         stream << it->name << ": " << it->value << "\n";
     }
 
     stream << resp.content.data() << "\n";
-//    stream << "+ keep-alive: " << req.keepAlive << "\n";;
 
     return stream;
 }
@@ -68,7 +67,7 @@ public:
     
     RequestDsl &header(const std::string &name, const std::string &value)
     {
-        Request::HeaderItem item = {name, value};
+        httpparser::Request::HeaderItem item = {name, value};
         request.headers.push_back(item);
         return *this; 
     }
@@ -86,13 +85,13 @@ public:
         return *this; 
     }
     
-    operator Request () const
+    operator httpparser::Request () const
     {
         return request;
     }
 
 private:
-    Request request;
+    httpparser::Request request;
 };
 
 class ResponseDsl
@@ -119,7 +118,7 @@ public:
 
     ResponseDsl &header(const std::string &name, const std::string &value)
     {
-        Response::HeaderItem item = {name, value};
+        httpparser::Response::HeaderItem item = {name, value};
         response.headers.push_back(item);
         return *this;
     }
@@ -137,13 +136,13 @@ public:
         return *this;
     }
 
-    operator Response () const
+    operator httpparser::Response () const
     {
         return response;
     }
 
 private:
-    Response response;
+    httpparser::Response response;
 };
 
 

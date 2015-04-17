@@ -8,10 +8,14 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+
+namespace httpparser
+{
 
 struct Request {
     Request()
-        : keepAlive(false)
+        : versionMajor(0), versionMinor(0), keepAlive(false)
     {}
     
     struct HeaderItem
@@ -27,33 +31,27 @@ struct Request {
     std::vector<HeaderItem> headers;
     std::vector<char> content;
     bool keepAlive;
+
+    std::string inspect() const
+    {
+        std::stringstream stream;
+        stream << method << " " << uri << " HTTP/"
+               << versionMajor << "." << versionMinor << "\n";
+
+        for(std::vector<Request::HeaderItem>::const_iterator it = headers.begin();
+            it != headers.end(); ++it)
+        {
+            stream << it->name << ": " << it->value << "\n";
+        }
+
+        std::string data(content.begin(), content.end());
+        stream << data << "\n";
+        stream << "+ keep-alive: " << keepAlive << "\n";;
+        return stream.str();
+    }
 };
 
-inline bool operator == (const Request::HeaderItem &lhs, const Request::HeaderItem &rhs)
-{
-    if( strcasecmp(lhs.name.c_str(), rhs.name.c_str()) != 0 )
-        return false;
-    else
-        return lhs.value == rhs.value;
-}
-
-inline bool operator == (const Request &lhs, const Request &rhs)
-{
-    if( lhs.method != rhs.method )
-        return false;
-    else if( lhs.uri != rhs.uri )
-        return false;
-    else if( lhs.versionMajor != rhs.versionMajor )
-        return false;
-    else if( lhs.versionMinor != rhs.versionMinor )
-        return false;
-    else if( lhs.headers != rhs.headers )
-        return false;
-    else if( lhs.content != rhs.content )
-        return false;
-        
-    return lhs.keepAlive == rhs.keepAlive;
-}
+} // namespace httpparser
 
 
 #endif // HTTPPARSER_REQUEST_H

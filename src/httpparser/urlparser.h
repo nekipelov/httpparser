@@ -7,15 +7,33 @@
 #define HTTPPARSER_URLPARSER_H
 
 #include <string>
+#include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
+
+namespace httpparser
+{
 
 class UrlParser
 {
 public:
+    UrlParser()
+        : valid(false)
+    {
+    }
+
     explicit UrlParser(const std::string &url)
         : valid(true)
     {
         parse(url);
+    }
+
+    bool parse(const std::string &str)
+    {
+        url = Url();
+        parse_(str);
+
+        return isValid();
     }
 
     bool isValid() const
@@ -25,41 +43,49 @@ public:
 
     std::string scheme() const
     {
+        assert( isValid() );
         return url.scheme;
     }
 
     std::string username() const
     {
+        assert( isValid() );
         return url.username;
     }
 
     std::string password() const
     {
+        assert( isValid() );
         return url.password;
     }
 
     std::string hostname() const
     {
+        assert( isValid() );
         return url.hostname;
     }
 
     std::string port() const
     {
+        assert( isValid() );
         return url.port;
     }
 
     std::string path() const
     {
+        assert( isValid() );
         return url.path;
     }
 
     std::string query() const
     {
+        assert( isValid() );
         return url.query;
     }
 
     std::string fragment() const
     {
+        assert( isValid() );
         return url.fragment;
     }
 
@@ -67,6 +93,8 @@ public:
     {
         const uint16_t defaultHttpPort = 80;
         const uint16_t defaultHttpsPort = 443;
+
+        assert( isValid() );
 
         if( url.port.empty() )
         {
@@ -82,7 +110,7 @@ public:
     }
 
 private:
-    bool isUnreserved(char ch)
+    bool isUnreserved(char ch) const
     {
         if( isalnum(ch) )
             return true;
@@ -99,7 +127,7 @@ private:
         return false;
     }
 
-    void parse(const std::string &str)
+    void parse_(const std::string &str)
     {
         enum {
             Scheme,
@@ -119,6 +147,7 @@ private:
         std::string usernameOrHostname;
         std::string portOrPassword;
 
+        valid = true;
         url.path = "/";
         url.integerPort = 0;
 
@@ -322,6 +351,9 @@ private:
 
     struct Url
     {
+        Url() : integerPort(0)
+        {}
+
         std::string scheme;
         std::string username;
         std::string password;
@@ -333,5 +365,7 @@ private:
         uint16_t integerPort;
     } url;
 };
+
+} // namespace httpparser
 
 #endif // HTTPPARSER_URLPARSER_H

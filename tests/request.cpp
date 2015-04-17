@@ -10,6 +10,9 @@
 
 BOOST_AUTO_TEST_SUITE(Simple)
 
+using httpparser::HttpRequestParser;
+using httpparser::Request;
+
 struct RequestFixture
 {
     Request parse(const std::string &text)
@@ -19,7 +22,7 @@ struct RequestFixture
         
         HttpRequestParser::ParseResult res = parser.parse(request, text.c_str(), text.c_str() + text.size());
         
-        if( res != HttpRequestParser::CompletedResult )
+        if( res != HttpRequestParser::ParsingCompleted )
             return Request();
         else
             return request;
@@ -35,7 +38,7 @@ BOOST_FIXTURE_TEST_CASE(get_http_09, RequestFixture)
         .uri("/uri")
         .version(0, 9);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(get_http_09_uri_with_query_string, RequestFixture)
@@ -47,7 +50,7 @@ BOOST_FIXTURE_TEST_CASE(get_http_09_uri_with_query_string, RequestFixture)
         .uri("/uri?arg1=test;arg1=%20%21;arg3=test")
         .version(0, 9);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(get_http_10, RequestFixture)
@@ -60,7 +63,7 @@ BOOST_FIXTURE_TEST_CASE(get_http_10, RequestFixture)
             .version(1, 0)
             .keepAlive(false);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(get_http_11, RequestFixture)
@@ -73,7 +76,7 @@ BOOST_FIXTURE_TEST_CASE(get_http_11, RequestFixture)
             .version(1, 1)
             .keepAlive(true);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(post_http_11, RequestFixture)
@@ -86,7 +89,7 @@ BOOST_FIXTURE_TEST_CASE(post_http_11, RequestFixture)
             .version(1, 1)
             .keepAlive(true);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_FIXTURE_TEST_CASE(post_http_11_with_header_field, RequestFixture)
@@ -99,10 +102,10 @@ BOOST_FIXTURE_TEST_CASE(post_http_11_with_header_field, RequestFixture)
             .method("POST")
             .uri("/uri")
             .version(1, 1)
-            .header("x-custom-header", "header value")
+            .header("X-Custom-Header", "header value")
             .keepAlive(true);
     
-    BOOST_CHECK_EQUAL(result, should);
+    BOOST_CHECK_EQUAL(result.inspect(), should.inspect());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

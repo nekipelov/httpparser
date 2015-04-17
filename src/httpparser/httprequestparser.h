@@ -3,15 +3,19 @@
  * License: MIT
  */
 
-#ifndef LIBAHTTP_REQUESTPARSER_H
-#define LIBAHTTP_REQUESTPARSER_H
+#ifndef HTTPPARSER_REQUESTPARSER_H
+#define HTTPPARSER_REQUESTPARSER_H
 
-#include <boost/logic/tribool.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <algorithm>
+
+#include <string.h>
+#include <stdlib.h>
 
 #include "request.h"
 
-// Parser for incoming requests.
+namespace httpparser
+{
+
 class HttpRequestParser
 {
 public:
@@ -22,11 +26,10 @@ public:
     {
     }
 
-    // ParsingResult? ParsingCompleted, ParsingError...
     enum ParseResult {
-        CompletedResult,
-        IncompletedResult,
-        ErrorResult
+        ParsingCompleted,
+        ParsingIncompleted,
+        ParsingError
     };
 
     ParseResult parse(Request &req, const char *begin, const char *end)
@@ -49,192 +52,186 @@ private:
             switch (state)
             {
             case RequestMethodStart:
-                if (!isChar(input) || isControl(input) || isSpecial(input))
+                if( !isChar(input) || isControl(input) || isSpecial(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     state = RequestMethod;
                     req.method.push_back(input);
-                    continue;
                 }
+                break;
             case RequestMethod:
-                if (input == ' ')
+                if( input == ' ' )
                 {
                     state = RequestUriStart;
-                    continue;
                 }
-                else if (!isChar(input) || isControl(input) || isSpecial(input))
+                else if( !isChar(input) || isControl(input) || isSpecial(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     req.method.push_back(input);
-                    continue;
                 }
+                break;
             case RequestUriStart:
-                if (isControl(input))
+                if( isControl(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     state = RequestUri;
                     req.uri.push_back(input);
-                    continue;
                 }
+                break;
             case RequestUri:
-                if (input == ' ')
+                if( input == ' ' )
                 {
                     state = RequestHttpVersion_h;
-                    continue;
                 }
                 else if (input == '\r')
                 {
                     req.versionMajor = 0;
                     req.versionMinor = 9;
 
-                    return CompletedResult;
+                    return ParsingCompleted;
                 }
-                else if (isControl(input))
+                else if( isControl(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     req.uri.push_back(input);
-                    continue;
                 }
+                break;
             case RequestHttpVersion_h:
-                if (input == 'H')
+                if( input == 'H' )
                 {
                     state = RequestHttpVersion_ht;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_ht:
-                if (input == 'T')
+                if( input == 'T' )
                 {
                     state = RequestHttpVersion_htt;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_htt:
-                if (input == 'T')
+                if( input == 'T' )
                 {
                     state = RequestHttpVersion_http;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_http:
-                if (input == 'P')
+                if( input == 'P' )
                 {
                     state = RequestHttpVersion_slash;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_slash:
-                if (input == '/')
+                if( input == '/' )
                 {
                     req.versionMajor = 0;
                     req.versionMinor = 0;
                     state = RequestHttpVersion_majorStart;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_majorStart:
-                if (isDigit(input))
+                if( isDigit(input) )
                 {
                     req.versionMajor = input - '0';
                     state = RequestHttpVersion_major;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_major:
-                if (input == '.')
+                if( input == '.' )
                 {
                     state = RequestHttpVersion_minorStart;
-                    continue;
                 }
                 else if (isDigit(input))
                 {
                     req.versionMajor = req.versionMajor * 10 + input - '0';
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_minorStart:
-                if (isDigit(input))
+                if( isDigit(input) )
                 {
                     req.versionMinor = input - '0';
                     state = RequestHttpVersion_minor;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case RequestHttpVersion_minor:
-                if (input == '\r')
+                if( input == '\r' )
                 {
-                    state = ExpectingNewline_1;
-                    continue;
+                    state = ResponseHttpVersion_newLine;
                 }
-                else if (isDigit(input))
+                else if( isDigit(input) )
                 {
                     req.versionMinor = req.versionMinor * 10 + input - '0';
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
-            case ExpectingNewline_1:
-                if (input == '\n')
+                break;
+            case ResponseHttpVersion_newLine:
+                if( input == '\n' )
                 {
                     state = HeaderLineStart;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case HeaderLineStart:
-                if (input == '\r')
+                if( input == '\r' )
                 {
                     state = ExpectingNewline_3;
-                    continue;
                 }
-                else if (!req.headers.empty() && (input == ' ' || input == '\t'))
+                else if( !req.headers.empty() && (input == ' ' || input == '\t') )
                 {
                     state = HeaderLws;
-                    continue;
                 }
-                else if (!isChar(input) || isControl(input) || isSpecial(input))
+                else if( !isChar(input) || isControl(input) || isSpecial(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
@@ -243,55 +240,52 @@ private:
                     req.headers.back().value.reserve(16);
                     req.headers.back().name.push_back(input);
                     state = HeaderName;
-                    continue;
                 }
+                break;
             case HeaderLws:
-                if (input == '\r')
+                if( input == '\r' )
                 {
                     state = ExpectingNewline_2;
-                    continue;
                 }
-                else if (input == ' ' || input == '\t')
+                else if( input == ' ' || input == '\t' )
                 {
-                    continue;
                 }
-                else if (isControl(input))
+                else if( isControl(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     state = HeaderValue;
                     req.headers.back().value.push_back(input);
-                    continue;
                 }
+                break;
             case HeaderName:
-                if (input == ':')
+                if( input == ':' )
                 {
                     state = SpaceBeforeHeaderValue;
-                    continue;
                 }
-                else if (!isChar(input) || isControl(input) || isSpecial(input))
+                else if( !isChar(input) || isControl(input) || isSpecial(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     req.headers.back().name.push_back(input);
-                    continue;
                 }
+                break;
             case SpaceBeforeHeaderValue:
-                if (input == ' ')
+                if( input == ' ' )
                 {
                     state = HeaderValue;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case HeaderValue:
-                if (input == '\r')
+                if( input == '\r' )
                 {
                     if( req.method == "POST" || req.method == "PUT" )
                     {
@@ -309,27 +303,26 @@ private:
                         }
                     }
                     state = ExpectingNewline_2;
-                    continue;
                 }
-                else if (isControl(input))
+                else if( isControl(input) )
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 else
                 {
                     req.headers.back().value.push_back(input);
-                    continue;
                 }
+                break;
             case ExpectingNewline_2:
-                if (input == '\n')
+                if( input == '\n' )
                 {
                     state = HeaderLineStart;
-                    continue;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
+                break;
             case ExpectingNewline_3: {
                 std::vector<Request::HeaderItem>::iterator it = std::find_if(req.headers.begin(),
                                                                     req.headers.end(),
@@ -352,43 +345,80 @@ private:
                         req.keepAlive = true;
                 }
 
-                if(chunked)
+                if( chunked )
                 {
                     state = ChunkSize;
-                    continue;
                 }
                 else if( contentSize == 0 )
                 {
                     if( input == '\n')
-                        return CompletedResult;
+                        return ParsingCompleted;
                     else
-                        return ErrorResult;
+                        return ParsingError;
                 }
                 else
                 {
                     state = Post;
-                    continue;
                 }
+                break;
             }
             case Post:
                 --contentSize;
                 req.content.push_back( input );
+
                 if( contentSize == 0 )
-                    return CompletedResult;
-                else
-                    continue;
+                {
+                    return ParsingCompleted;
+                }
+                break;
             case ChunkSize:
-                if(isalnum(input))
+                if( isalnum(input) )
                 {
                     chunkSizeStr.push_back(input);
                 }
-                else if(input == '\r')
+                else if( input == ';' )
+                {
+                    state = ChunkExtensionName;
+                }
+                else if( input == '\r' )
                 {
                     state = ChunkSizeNewLine;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
+                }
+                break;
+            case ChunkExtensionName:
+                if( isalnum(input) || input == ' ' )
+                {
+                    // skip
+                }
+                else if( input == '=' )
+                {
+                    state = ChunkExtensionValue;
+                }
+                else if( input == '\r' )
+                {
+                    state = ChunkSizeNewLine;
+                }
+                else
+                {
+                    return ParsingError;
+                }
+                break;
+            case ChunkExtensionValue:
+                if( isalnum(input) || input == ' ' )
+                {
+                    // skip
+                }
+                else if( input == '\r' )
+                {
+                    state = ChunkSizeNewLine;
+                }
+                else
+                {
+                    return ParsingError;
                 }
                 break;
             case ChunkSizeNewLine:
@@ -405,7 +435,7 @@ private:
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 break;
             case ChunkSizeNewLine_2:
@@ -413,19 +443,51 @@ private:
                 {
                     state = ChunkSizeNewLine_3;
                 }
+                else if( isalpha(input) )
+                {
+                    state = ChunkTrailerName;
+                }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 break;
             case ChunkSizeNewLine_3:
                 if( input == '\n' )
                 {
-                    return CompletedResult;
+                    return ParsingCompleted;
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
+                }
+                break;
+            case ChunkTrailerName:
+                if( isalnum(input) )
+                {
+                    // skip
+                }
+                else if( input == ':' )
+                {
+                    state = ChunkTrailerValue;
+                }
+                else
+                {
+                    return ParsingError;
+                }
+                break;
+            case ChunkTrailerValue:
+                if( isalnum(input) || input == ' ' )
+                {
+                    // skip
+                }
+                else if( input == '\r' )
+                {
+                    state = ChunkSizeNewLine;
+                }
+                else
+                {
+                    return ParsingError;
                 }
                 break;
             case ChunkData:
@@ -443,7 +505,7 @@ private:
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 break;
             case ChunkDataNewLine_2:
@@ -453,15 +515,15 @@ private:
                 }
                 else
                 {
-                    return ErrorResult;
+                    return ParsingError;
                 }
                 break;
             default:
-                return ErrorResult;
+                return ParsingError;
             }
         }
 
-        return IncompletedResult;
+        return ParsingIncompleted;
     }
 
     // Check if a byte is an HTTP character.
@@ -513,7 +575,7 @@ private:
         RequestHttpVersion_major,
         RequestHttpVersion_minorStart,
         RequestHttpVersion_minor,
-        
+
         ResponseStatusStart,
         ResponseHttpVersion_ht,
         ResponseHttpVersion_htt,
@@ -527,8 +589,8 @@ private:
         ResponseHttpVersion_statusCodeStart,
         ResponseHttpVersion_spaceAfterStatusCode,
         ResponseHttpVersion_statusTextStart,
-        
-        ExpectingNewline_1,
+        ResponseHttpVersion_newLine,
+
         HeaderLineStart,
         HeaderLws,
         HeaderName,
@@ -539,9 +601,13 @@ private:
 
         Post,
         ChunkSize,
+        ChunkExtensionName,
+        ChunkExtensionValue,
         ChunkSizeNewLine,
         ChunkSizeNewLine_2,
         ChunkSizeNewLine_3,
+        ChunkTrailerName,
+        ChunkTrailerValue,
 
         ChunkDataNewLine_1,
         ChunkDataNewLine_2,
@@ -553,5 +619,7 @@ private:
     size_t chunkSize;
     bool chunked;
 };
+
+} // namespace httpparser
 
 #endif // LIBAHTTP_REQUESTPARSER_H

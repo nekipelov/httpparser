@@ -5,9 +5,9 @@
 
 #include <httpparser/urlparser.h>
 
-#include "common.h"
-
 BOOST_AUTO_TEST_SUITE(UrlParserTest)
+
+using httpparser::UrlParser;
 
 BOOST_AUTO_TEST_CASE(http_url)
 {

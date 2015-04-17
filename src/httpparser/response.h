@@ -8,10 +8,14 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+
+namespace httpparser
+{
 
 struct Response {
     Response()
-        : keepAlive(false)
+        : versionMajor(0), versionMinor(0), keepAlive(false), statusCode(0)
     {}
     
     struct HeaderItem
@@ -28,34 +32,26 @@ struct Response {
     
     unsigned int statusCode;
     std::string status;
+
+    std::string inspect() const
+    {
+        std::stringstream stream;
+        stream << "HTTP/" << versionMajor << "." << versionMinor
+               << " " << statusCode << " " << status << "\n";
+
+        for(std::vector<Response::HeaderItem>::const_iterator it = headers.begin();
+            it != headers.end(); ++it)
+        {
+            stream << it->name << ": " << it->value << "\n";
+        }
+
+        std::string data(content.begin(), content.end());
+        stream << data << "\n";
+        return stream.str();
+    }
 };
 
-inline bool operator == (const Response::HeaderItem &lhs, const Response::HeaderItem &rhs)
-{
-    if( strcasecmp(lhs.name.c_str(), rhs.name.c_str()) != 0 )
-        return false;
-    else
-        return lhs.value == rhs.value;
-}
+} // namespace httpparser
 
-inline bool operator == (const Response &lhs, const Response &rhs)
-{
-    
-    if( lhs.statusCode != rhs.statusCode )
-        return false;
-    else if( lhs.status != rhs.status )
-        return false;
-    else if( lhs.versionMajor != rhs.versionMajor )
-        return false;
-    else if( lhs.versionMinor != rhs.versionMinor )
-        return false;
-    else if( lhs.headers != rhs.headers )
-        return false;
-    else if( lhs.content != rhs.content )
-        return false;
-    return true;
-}
-
-
-#endif // HSERV_RESPONSE_H
+#endif // HTTPPARSER_RESPONSE_H
 
