@@ -158,7 +158,7 @@ private:
             switch(state)
             {
             case Scheme:
-                if( isalpha(ch) || ch == '+' || ch == '-' || ch == '.')
+                if( isalnum(ch) || ch == '+' || ch == '-' || ch == '.')
                 {
                     url.scheme += ch;
                 }
@@ -225,7 +225,7 @@ private:
                 }
                 break;
             case Password:
-                if( isalpha(ch) || ch == '%' )
+                if( isalnum(ch) || ch == '%' )
                 {
                     url.password += ch;
                 }
@@ -276,7 +276,7 @@ private:
                     url.integerPort = atoi(url.port.c_str());
                     state = Path;
                 }
-                else if( isalpha(ch) || ch == '%' )
+                else if( isalnum(ch) || ch == '%' )
                 {
                     std::swap(url.username, usernameOrHostname);
                     std::swap(url.password, portOrPassword);
