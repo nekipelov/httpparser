@@ -25,7 +25,7 @@ Examples
         Request request;
         HttpRequestParser parser;
     
-        HttpRequestParser::ParseResult res = parser.parse(request, text, text + sizeof(text));
+        HttpRequestParser::ParseResult res = parser.parse(request, text, text + strlen(text));
     
         if( res == HttpRequestParser::ParsingCompleted )
         {
@@ -61,7 +61,7 @@ Examples
         Response response;
         HttpResponseParser parser;
     
-        HttpResponseParser::ParseResult res = parser.parse(response, text, text + sizeof(text));
+        HttpResponseParser::ParseResult res = parser.parse(response, text, text + strlen(text));
     
         if( res == HttpResponseParser::ParsingCompleted )
         {
